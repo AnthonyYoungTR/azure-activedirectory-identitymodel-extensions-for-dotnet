@@ -365,12 +365,25 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
             get
             {
                 var key = KeyingMaterial.X509SecurityKeySelfSigned2048_SHA256;
+                var sessionKey = KeyingMaterial.DefaultSymmetricSecurityKey_128;
+
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
                     Audience = Default.Audience,
                     NotBefore = Default.NotBefore,
                     Expires = Default.Expires,
                     Issuer = Default.Issuer,
+                    SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.RsaSha256Signature, SecurityAlgorithms.Sha256Digest),
+                    Subject = new ClaimsIdentity(Default.SamlClaims)
+                };
+
+                var tokenDescriptorWithEncryptingCredentials = new SecurityTokenDescriptor
+                {
+                    Audience = Default.Audience,
+                    NotBefore = Default.NotBefore,
+                    Expires = Default.Expires,
+                    Issuer = Default.Issuer,
+                    EncryptingCredentials = new EncryptingCredentials(sessionKey, SecurityAlgorithms.Aes128Gcm),
                     SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.RsaSha256Signature, SecurityAlgorithms.Sha256Digest),
                     Subject = new ClaimsIdentity(Default.SamlClaims)
                 };
@@ -397,6 +410,13 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     SecurityToken = token,
                     TestId = "WithInclusivePrefixList",
                     ValidationParameters = validationParameters
+                });
+
+                theoryData.Add(new Saml2TheoryData
+                {
+                    SecurityToken = tokenHandler.CreateToken(tokenDescriptorWithEncryptingCredentials) as Saml2SecurityToken,
+                    ExpectedException = new ExpectedException(typeof(ArgumentNullException)),
+                    TestId = "EncryptedAssertion",
                 });
 
                 theoryData.Add(new Saml2TheoryData
