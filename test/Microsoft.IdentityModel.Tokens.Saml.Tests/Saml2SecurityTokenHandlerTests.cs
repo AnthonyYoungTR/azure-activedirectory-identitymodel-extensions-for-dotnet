@@ -377,13 +377,24 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     Subject = new ClaimsIdentity(Default.SamlClaims)
                 };
 
-                var tokenDescriptorWithEncryptingCredentials = new SecurityTokenDescriptor
+                var tokenDescriptorWithPreSharedEncryptingCredentials = new SecurityTokenDescriptor
                 {
                     Audience = Default.Audience,
                     NotBefore = Default.NotBefore,
                     Expires = Default.Expires,
                     Issuer = Default.Issuer,
                     EncryptingCredentials = new EncryptingCredentials(sessionKey, SecurityAlgorithms.Aes128Gcm),
+                    SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.RsaSha256Signature, SecurityAlgorithms.Sha256Digest),
+                    Subject = new ClaimsIdentity(Default.SamlClaims)
+                };
+
+                var tokenDescriptorWithEncryptingCredentials = new SecurityTokenDescriptor
+                {
+                    Audience = Default.Audience,
+                    NotBefore = Default.NotBefore,
+                    Expires = Default.Expires,
+                    Issuer = Default.Issuer,
+                    EncryptingCredentials = new X509EncryptingCredentials(KeyingMaterial.CertSelfSigned2048_SHA256_Public),
                     SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.RsaSha256Signature, SecurityAlgorithms.Sha256Digest),
                     Subject = new ClaimsIdentity(Default.SamlClaims)
                 };
@@ -414,9 +425,16 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
 
                 theoryData.Add(new Saml2TheoryData
                 {
+                    SecurityToken = tokenHandler.CreateToken(tokenDescriptorWithPreSharedEncryptingCredentials) as Saml2SecurityToken,
+                    ExpectedException = new ExpectedException(typeof(ArgumentNullException)),
+                    TestId = "EncryptedAssertion_PreSharedKey",
+                });
+
+                theoryData.Add(new Saml2TheoryData
+                {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptorWithEncryptingCredentials) as Saml2SecurityToken,
                     ExpectedException = new ExpectedException(typeof(ArgumentNullException)),
-                    TestId = "EncryptedAssertion",
+                    TestId = "EncryptedAssertion_KeyWrap",
                 });
 
                 theoryData.Add(new Saml2TheoryData
