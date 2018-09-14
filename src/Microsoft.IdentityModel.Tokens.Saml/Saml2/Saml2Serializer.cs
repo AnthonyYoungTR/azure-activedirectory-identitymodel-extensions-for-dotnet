@@ -1624,6 +1624,10 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
             if (null != assertion.Advice)
                 WriteAdvice(writer, assertion.Advice);
 
+            // <Statement|AuthnStatement|AuthzDecisionStatement|AttributeStatement>, 0-OO
+            foreach (Saml2Statement statement in assertion.Statements)
+                WriteStatement(writer, statement);
+
             writer.WriteEndElement();
         }
 
