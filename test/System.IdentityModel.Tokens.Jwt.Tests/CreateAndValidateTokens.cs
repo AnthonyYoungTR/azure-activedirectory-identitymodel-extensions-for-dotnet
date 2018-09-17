@@ -823,7 +823,7 @@ namespace System.IdentityModel.Tokens.Jwt.Tests
                 ExpectedException.NoExceptionExpected
             );
 
-            encryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepKeyWrap, SecurityAlgorithms.Aes128CbcHmacSha256);
+            encryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes128CbcHmacSha256);
             theoryData.Add(
                 "RsaOaepKeyWrap-Aes128CbcHmacSha256",
                 Default.SecurityTokenDescriptor(encryptingCredentials, Default.SymmetricSigningCredentials, ClaimSets.DefaultClaims),
@@ -831,7 +831,7 @@ namespace System.IdentityModel.Tokens.Jwt.Tests
                 ExpectedException.NoExceptionExpected
             );
 
-            encryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepKeyWrap, SecurityAlgorithms.Aes192CbcHmacSha384);
+            encryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes192CbcHmacSha384);
             theoryData.Add(
                 "RsaOaepKeyWrap-Aes192CbcHmacSha384",
                 Default.SecurityTokenDescriptor(encryptingCredentials, Default.SymmetricSigningCredentials, ClaimSets.DefaultClaims),
@@ -839,7 +839,7 @@ namespace System.IdentityModel.Tokens.Jwt.Tests
                 ExpectedException.NoExceptionExpected
             );
 
-            encryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepKeyWrap, SecurityAlgorithms.Aes256CbcHmacSha512);
+            encryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes256CbcHmacSha512);
             theoryData.Add(
                 "RsaOaepKeyWrap-Aes256CbcHmacSha512",
                 Default.SecurityTokenDescriptor(encryptingCredentials, Default.SymmetricSigningCredentials, ClaimSets.DefaultClaims),
@@ -888,7 +888,7 @@ namespace System.IdentityModel.Tokens.Jwt.Tests
                 ExpectedException.NoExceptionExpected
             );
 
-            encryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepKeyWrap, SecurityAlgorithms.Aes192CbcHmacSha384);
+            encryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes192CbcHmacSha384);
             theoryData.Add(
                 "RsaOaepKeyWrap-Aes192CbcHmacSha384",
                 Default.SecurityTokenDescriptor(encryptingCredentials, Default.SymmetricSigningCredentials, ClaimSets.DefaultClaims),
