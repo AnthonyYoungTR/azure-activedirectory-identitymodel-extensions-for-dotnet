@@ -34,6 +34,7 @@ using System.Text;
 using System.Xml;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens.Saml;
+using Microsoft.IdentityModel.Xml;
 using static Microsoft.IdentityModel.Logging.LogHelper;
 
 using TokenLogMessages = Microsoft.IdentityModel.Tokens.LogMessages;
@@ -225,11 +226,14 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
             if (string.IsNullOrEmpty(token))
                 throw LogArgumentNullException(nameof(token));
 
-            if (validationParameters == null)
-                throw LogArgumentNullException(nameof(validationParameters));
-
             if (token.Length > MaximumTokenSizeInBytes)
                 throw LogExceptionMessage(new ArgumentException(FormatInvariant(TokenLogMessages.IDX10209, token.Length, MaximumTokenSizeInBytes)));
+
+            // if an assertion is encrypted - decrypt it
+            if (IsSaml2EncryptedAssertion(token))
+            {
+                token = DecryptAssertion(token, validationParameters);
+            }
 
             var samlToken = ValidateSignature(token, validationParameters);
             if (samlToken == null)
@@ -429,6 +433,28 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
             throw LogExceptionMessage(new SecurityTokenInvalidSignatureException(TokenLogMessages.IDX10500));
         }
 
+        private IEnumerable<SecurityKey> GetAllSigningKeys(TokenValidationParameters validationParameters)
+        {
+            LogHelper.LogInformation(TokenLogMessages.IDX10243);
+            if (validationParameters.IssuerSigningKey != null)
+                yield return validationParameters.IssuerSigningKey;
+
+            if (validationParameters.IssuerSigningKeys != null)
+                foreach (SecurityKey key in validationParameters.IssuerSigningKeys)
+                    yield return key;
+        }
+
+        private string DecryptAssertion(string assertion, TokenValidationParameters validationParameters)
+        {
+            if (string.IsNullOrEmpty(assertion))
+                throw LogArgumentNullException(nameof(assertion));
+
+            if (validationParameters == null)
+                throw LogArgumentNullException(nameof(validationParameters));
+
+            return Serializer.DecryptAssertion(assertion, validationParameters);
+        }
+
         /// <summary>
         /// Returns a <see cref="SecurityKey"/> to use for validating the signature of a token.
         /// </summary>
@@ -480,6 +506,10 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
         /// <exception cref="ArgumentNullException">If <paramref name="token"/> is null or empty.</exception>
         /// <exception cref="ArgumentException">If <paramref name="token"/>.Length is greater than <see cref="TokenHandler.MaximumTokenSizeInBytes"/>.</exception>
         /// <returns>A <see cref="Saml2SecurityToken"/></returns>
+        /// <remarks>
+        /// In case when token represents an EncryptedAssertion, Encrypted property of <see cref="Saml2Assertion"/> will be set to True
+        /// and token will be used to set EncryptedAssertion property.
+        /// </remarks>
         public virtual Saml2SecurityToken ReadSaml2Token(string token)
         {
             if (string.IsNullOrEmpty(token))
@@ -541,6 +571,35 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
         internal static bool IsSaml2Assertion(XmlReader reader)
         {
             return reader.IsStartElement(Saml2Constants.Elements.Assertion, Saml2Constants.Namespace);
+        }
+
+        /// <summary>
+        /// Indicates if the assertion string represents an EncryptedAssertion.
+        /// </summary>
+        /// <param name="assertion">String representation of an assertion.</param>
+        /// <returns>'true' if assertion is encrypted, 'false' otherwise.</returns>
+        internal static bool IsSaml2EncryptedAssertion(string assertion)
+        {
+            using (var stringReader = new StringReader(assertion))
+            {
+                var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit };
+#if NET45 || NET451
+                settings.XmlResolver = null;
+#endif
+                using (var reader = XmlReader.Create(stringReader, settings))
+                {
+                    try
+                    {
+                        reader.MoveToContent();
+                        return reader.IsStartElement(Saml2Constants.Elements.EncryptedAssertion, Saml2Constants.Namespace);
+                    }
+                    catch (Exception)
+                    {
+                        LogInformation(LogMessages.IDX13609, assertion);
+                        return false;
+                    }
+                }
+            }
         }
 
         /// <summary>

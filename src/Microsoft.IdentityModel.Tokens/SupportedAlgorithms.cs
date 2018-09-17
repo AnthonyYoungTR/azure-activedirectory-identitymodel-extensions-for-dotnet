@@ -87,7 +87,10 @@ namespace Microsoft.IdentityModel.Tokens
 
             if (!(algorithm.Equals(SecurityAlgorithms.Aes128CbcHmacSha256, StringComparison.Ordinal)
                || algorithm.Equals(SecurityAlgorithms.Aes192CbcHmacSha384, StringComparison.Ordinal)
-               || algorithm.Equals(SecurityAlgorithms.Aes256CbcHmacSha512, StringComparison.Ordinal)))
+               || algorithm.Equals(SecurityAlgorithms.Aes256CbcHmacSha512, StringComparison.Ordinal)
+               || algorithm.Equals(SecurityAlgorithms.Aes128Gcm, StringComparison.Ordinal)
+               || algorithm.Equals(SecurityAlgorithms.Aes192Gcm, StringComparison.Ordinal)
+               || algorithm.Equals(SecurityAlgorithms.Aes256Gcm, StringComparison.Ordinal)))
                 return false;
 
             if (key is SymmetricSecurityKey)
@@ -142,7 +145,8 @@ namespace Microsoft.IdentityModel.Tokens
 
             if (algorithm.Equals(SecurityAlgorithms.RsaPKCS1, StringComparison.Ordinal)
                 || algorithm.Equals(SecurityAlgorithms.RsaOAEP, StringComparison.Ordinal)
-                || algorithm.Equals(SecurityAlgorithms.RsaOaepKeyWrap, StringComparison.Ordinal))
+                || algorithm.Equals(SecurityAlgorithms.RsaOaepKeyWrap, StringComparison.Ordinal)
+                || algorithm.Equals(SecurityAlgorithms.RsaOaepMgf1pKeyWrap, StringComparison.Ordinal))
             {
                 if (key is RsaSecurityKey)
                     return true;
@@ -170,6 +174,7 @@ namespace Microsoft.IdentityModel.Tokens
                 case SecurityAlgorithms.RsaOAEP:
                 case SecurityAlgorithms.RsaPKCS1:
                 case SecurityAlgorithms.RsaOaepKeyWrap:
+                case SecurityAlgorithms.RsaOaepMgf1pKeyWrap:
                     return true;
                 case SecurityAlgorithms.RsaSsaPssSha256:
                 case SecurityAlgorithms.RsaSsaPssSha384:
@@ -217,6 +222,9 @@ namespace Microsoft.IdentityModel.Tokens
                 case SecurityAlgorithms.Aes128CbcHmacSha256:
                 case SecurityAlgorithms.Aes192CbcHmacSha384:
                 case SecurityAlgorithms.Aes256CbcHmacSha512:
+                case SecurityAlgorithms.Aes128Gcm:
+                case SecurityAlgorithms.Aes192Gcm:
+                case SecurityAlgorithms.Aes256Gcm:
                 case SecurityAlgorithms.Aes128KW:
                 case SecurityAlgorithms.Aes256KW:
                 case SecurityAlgorithms.HmacSha256Signature:
