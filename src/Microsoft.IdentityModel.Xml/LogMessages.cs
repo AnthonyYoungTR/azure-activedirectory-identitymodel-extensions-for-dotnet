@@ -52,6 +52,7 @@ namespace Microsoft.IdentityModel.Xml
         internal const string IDX30027 = "IDX30027: InnerReader is null. It is necessary to set InnerReader before making calls to DelegatingXmlDictionaryReader.";
         internal const string IDX30028 = "IDX30028: InnerWriter is null. It is necessary to set InnerWriter before making calls to DelegatingXmlDictionaryWriter.";
         internal const string IDX30029 = "IDX30029: The Reference '{0}' has exceeded the number of Transforms that will be processed: '{1}'. If there is a need to increase the number of Transforms, the DSigSerializer.MaximumReferenceTransforms can be increased. The default value is 10.";
+        internal const string IDX30030 = "IDX30030: EncryptedKey element is embedded withing EncryptedData element. This is currently not supported. Place EncryptedKey element next to associated EncryptedData element, within the enclosing Saml parent element.";
 
         // XML structure, supported exceptions
         internal const string IDX30100 = "IDX30100: Unable to process the {0} element. This canonicalization method is not supported: '{1}'. Supported methods are: '{2}', '{3}'.";
