@@ -1175,14 +1175,14 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
             {
                 var token = theoryData.Handler.ReadSaml2Token(theoryData.Token);
 
-                IdentityComparer.AreEqual(token.Assertion.Encrypted, true, context);
+                IdentityComparer.AreEqual(token.Assertion.Encrypted, true, context); // saml2 assertion is encrypted hence Assertion.Encrypted should be True
 
                 if (string.IsNullOrEmpty(token.Assertion.EncryptedAssertion))
                     context.Diffs.Add("!Assertion.EncryptedAssertion string should not be empty if Saml2Assertion.Encrypted == True");
 
                 var result = token.Assertion.GetType().GetProperty(theoryData.PropertyBag["AssertionPropertyName"].ToString()).GetValue(token.Assertion, null);
 
-                IdentityComparer.AreEqual(result, theoryData.PropertyBag["AssertionPropertyExpectedValue"].ToString(), context);
+                IdentityComparer.AreEqual(result, theoryData.PropertyBag["AssertionPropertyExpectedValue"], context);
                 theoryData.ExpectedException.ProcessNoException(context);
             }
             catch (Exception ex)
@@ -1214,14 +1214,6 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     PropertyBag = new Dictionary<string, object> { { "AssertionPropertyName", "Conditions" } },
                     ExpectedException = new ExpectedException(typeof(Saml2SecurityTokenEncryptedAssertionException), "IDX13608: Saml2Assertion is encrypted. Unable to get 'Conditions'"),
                     TestId = "EncryptedAssertion_Access_Conditions",
-                });
-
-                theoryData.Add(new Saml2TheoryData
-                {
-                    Token = ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_Valid,
-                    PropertyBag = new Dictionary<string, object> { { "AssertionPropertyName", "EncryptingCredentials" } },
-                    ExpectedException = new ExpectedException(typeof(Saml2SecurityTokenEncryptedAssertionException), "IDX13608: Saml2Assertion is encrypted. Unable to get 'EncryptingCredentials'"),
-                    TestId = "EncryptedAssertion_Access_EncryptingCredentials",
                 });
 
                 theoryData.Add(new Saml2TheoryData
@@ -1296,6 +1288,14 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = "EncryptedAssertion_Access_Version",
                 });
 
+                theoryData.Add(new Saml2TheoryData
+                {
+                    Token = ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_Valid,
+                    PropertyBag = new Dictionary<string, object> { { "AssertionPropertyName", "EncryptingCredentials" }, { "AssertionPropertyExpectedValue", null} },
+                    ExpectedException = ExpectedException.NoExceptionExpected,
+                    TestId = "EncryptedAssertion_Access_EncryptingCredentials",
+                });
+
                 return theoryData;
             }
         }
@@ -1308,14 +1308,14 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
             try
             {
                 var saml2EncryptedToken = theoryData.Handler.ReadSaml2Token(theoryData.Token);
-                IdentityComparer.AreEqual(saml2EncryptedToken.Assertion.Encrypted, true, context);
+                IdentityComparer.AreEqual(saml2EncryptedToken.Assertion.Encrypted, true, context); // token should be encrypted
 
-                if (string.IsNullOrEmpty(saml2EncryptedToken.Assertion.EncryptedAssertion))
+                if (string.IsNullOrEmpty(saml2EncryptedToken.Assertion.EncryptedAssertion)) // if token is encrypted, EncryptedAssertion string should not be empty
                     context.Diffs.Add("!Assertion.EncryptedAssertion string should not be empty if Saml2Assertion.Encrypted == True");
 
-                theoryData.Handler.ValidateToken(theoryData.Token, theoryData.ValidationParameters, out SecurityToken validatedToken);
+                theoryData.Handler.ValidateToken(theoryData.Token, theoryData.ValidationParameters, out SecurityToken validatedToken); // validate/decrypt token
 
-                IdentityComparer.AreEqual(((Saml2SecurityToken)validatedToken).Assertion.Encrypted, false, context);
+                IdentityComparer.AreEqual(((Saml2SecurityToken)validatedToken).Assertion.Encrypted, false, context); // token should be decrypted
 
                 theoryData.ExpectedException.ProcessNoException(context);
             }
@@ -1331,14 +1331,16 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
         {
             get
             {
+                // list keys
                 var signingKey = KeyingMaterial.X509SecurityKeySelfSigned2048_SHA256;
                 var sessionKey = KeyingMaterial.DefaultSymmetricSecurityKey_128;
                 var wrongSessionKey = KeyingMaterial.DefaultSymmetricSecurityKey_192;
                 var wrongKeyWrapKey = KeyingMaterial.X509SecurityKeySelfSigned2048_SHA512;
+                var cert = KeyingMaterial.DefaultCert_2048;
 
                 var signingCredentials_Valid = new SigningCredentials(signingKey, SecurityAlgorithms.RsaSha256Signature, SecurityAlgorithms.Sha256Digest);
                 var encryptingCredentials_PreSharedSessionKey_Valid = new EncryptingCredentials(sessionKey, SecurityAlgorithms.Aes128Gcm);
-                var encryptingCredentials_X509_Valid = new X509EncryptingCredentials(KeyingMaterial.DefaultCert_2048);
+                var encryptingCredentials_X509_Valid = new X509EncryptingCredentials(cert);
 
                 //SET HELPER CRYPTO PROVIDER FACTORY - remove when AES-GCM is released and supported
                 encryptingCredentials_PreSharedSessionKey_Valid.CryptoProviderFactory = new AesGcmProviderFactory();
@@ -1387,6 +1389,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_Valid),
                 });
 
+                // Bad content. For AES-GCM: IV takes 12 bytes, Auth Tag 16 bytes => Cipher-text size is less than 1
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1396,6 +1399,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_BadContent_Invalid),
                 });
 
+                // namespace missing
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1405,6 +1409,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_NoXencNamespace_Invalid),
                 });
 
+                // namespace missing or as expected
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1414,6 +1419,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_BadNamespace_Invalid),
                 });
 
+                // namespace missing or as expected
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1423,6 +1429,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_BadNamespace_v2_Invalid),
                 });
 
+                // namespace missing or as expected
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1432,6 +1439,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_BadNamespace_v3_Invalid),
                 });
 
+                // Additional KeyInfo clauses (skipped while reading) should result with a valid EncryptedAssertion
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1441,6 +1449,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_AdditionalKeyInfoClauseValid),
                 });
 
+                // EncryptedKey element embedded in EncryptedData element is not supported
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1450,6 +1459,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_EmbeddedEncryptedKey_Invalid),
                 });
 
+                // Encryption algorithm is not provided - currently not supported
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1459,6 +1469,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_NoEncryptionAlgorithm_Invalid),
                 });
 
+                // Encryption algorithm is not provided - currently not supported
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1468,6 +1479,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_NoEncryptionAlgorithm_v2_Invalid),
                 });
 
+                // Encryption algorithm is not provided - currently not supported
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1477,6 +1489,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_NoEncryptionAlgorithm_Invalid),
                 });
 
+                // Encryption algorithm is not provided - currently not supported
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1486,6 +1499,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_NoEncryptionAlgorithm_v2_Invalid),
                 });
 
+                // DataReference element is not referencing the EncryptedData element
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1495,6 +1509,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadDataReference_Invalid),
                 });
 
+                // DataReference element is correct, but referencing EncryptedData element has no Id
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1504,6 +1519,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_GoodDataReference_EncryptedData_NoId_Invalid),
                 });
 
+                // EncryptedData element has a RetreivalUri but the is no EncryptedKey with that Id
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1513,6 +1529,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadRetrievalUri_Invalid),
                 });
 
+                // EncryptedData element has a correct RetreivalUri but the is EncryptedKey has no Id
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1522,6 +1539,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadRetrievalUri_NoKeyId_Invalid),
                 });
 
+                // Type of EncryptedData is not correct
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1531,6 +1549,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedDataType_Invalid),
                 });
 
+                // Type of EncryptedKey is not correct
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1540,51 +1559,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid),
                 });
 
-                theoryData.Add(new Saml2TheoryData
-                {
-                    SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
-                    ValidationParameters = CreateTokenValidationParameters(signingKey, KeyingMaterial.DefaultX509Key_2048_With_KeyId),
-                    Token = ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid,
-                    ExpectedException = new ExpectedException(typeof(Saml2SecurityTokenEncryptedAssertionDecryptionException), "IDX13614"),
-                    TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid),
-                });
-
-                theoryData.Add(new Saml2TheoryData
-                {
-                    SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
-                    ValidationParameters = CreateTokenValidationParameters(signingKey, KeyingMaterial.DefaultX509Key_2048_With_KeyId),
-                    Token = ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid,
-                    ExpectedException = new ExpectedException(typeof(Saml2SecurityTokenEncryptedAssertionDecryptionException), "IDX13614"),
-                    TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid),
-                });
-
-                theoryData.Add(new Saml2TheoryData
-                {
-                    SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
-                    ValidationParameters = CreateTokenValidationParameters(signingKey, KeyingMaterial.DefaultX509Key_2048_With_KeyId),
-                    Token = ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid,
-                    ExpectedException = new ExpectedException(typeof(Saml2SecurityTokenEncryptedAssertionDecryptionException), "IDX13614"),
-                    TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid),
-                });
-
-                theoryData.Add(new Saml2TheoryData
-                {
-                    SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
-                    ValidationParameters = CreateTokenValidationParameters(signingKey, KeyingMaterial.DefaultX509Key_2048_With_KeyId),
-                    Token = ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid,
-                    ExpectedException = new ExpectedException(typeof(Saml2SecurityTokenEncryptedAssertionDecryptionException), "IDX13614"),
-                    TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid),
-                });
-
-                theoryData.Add(new Saml2TheoryData
-                {
-                    SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
-                    ValidationParameters = CreateTokenValidationParameters(signingKey, KeyingMaterial.DefaultX509Key_2048_With_KeyId),
-                    Token = ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid,
-                    ExpectedException = new ExpectedException(typeof(Saml2SecurityTokenEncryptedAssertionDecryptionException), "IDX13614"),
-                    TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_BadEncryptedKeyType_Invalid),
-                });
-
+                // There is no CipherValue element
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1594,6 +1569,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_NoCipherValue_Invalid),
                 });
 
+                // There is no CipherData element
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1603,6 +1579,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_NoCipherData_Invalid),
                 });
 
+                // There is no EncryptedData element
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1612,6 +1589,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_SessionKey_NoEncryptedData_Invalid),
                 });
 
+                // There is no CipherValue element (content)
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1621,6 +1599,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_NoCipherValue_Invalid),
                 });
 
+                // There is no CipherValue element (KeyWrap)
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1630,6 +1609,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_NoCipherValue_v2_Invalid),
                 });
 
+                // incorrect keywrap key
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1639,6 +1619,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_Valid) + "_wrong_keyunwrap_key",
                 });
 
+                // some prefixes are missing/wrong
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_KeyWrap_Valid) as Saml2SecurityToken,
@@ -1648,6 +1629,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = nameof(ReferenceTokens.Saml2Token_EncryptedAssertion_KeyWrap_PrefixMissing_Invalid),
                 });
 
+                // namespace is missing/wrong
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_Valid) as Saml2SecurityToken,
@@ -1710,7 +1692,6 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = "EncryptedAssertion_PreSharedSessionKey_AESGCM",
                 });
 
-
                 return theoryData;
             }
         }
@@ -1724,9 +1705,9 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
             {
                 var token = theoryData.Handler.WriteToken(theoryData.SecurityToken);
                 var saml2Token = theoryData.Handler.ReadSaml2Token(token);
-                IdentityComparer.AreEqual(saml2Token.Assertion.Encrypted, true, context);
+                IdentityComparer.AreEqual(saml2Token.Assertion.Encrypted, true, context); // token should be encrypted
 
-                if (string.IsNullOrEmpty(saml2Token.Assertion.EncryptedAssertion))
+                if (string.IsNullOrEmpty(saml2Token.Assertion.EncryptedAssertion)) // if token is encrypted, EncryptedAssertion string should not be empty
                     context.Diffs.Add("!Assertion.EncryptedAssertion string should not be empty if Saml2Assertion.Encrypted == True");
 
                 theoryData.ExpectedException.ProcessNoException(context);
@@ -1743,14 +1724,18 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
         {
             get
             {
+                // list keys used
                 var key = KeyingMaterial.X509SecurityKeySelfSigned2048_SHA256;
                 var sessionKey = KeyingMaterial.DefaultSymmetricSecurityKey_128;
+                var cert = KeyingMaterial.DefaultCert_2048;
 
                 var signingCredentials_Valid = new SigningCredentials(key, SecurityAlgorithms.RsaSha256Signature, SecurityAlgorithms.Sha256Digest);
+
+                // encrypting credentials (Pre_Shared for one scenario and KeyWrap for another one)
                 var encryptingCredentials_PreSharedSessionKey_Valid = new EncryptingCredentials(sessionKey, SecurityAlgorithms.Aes128Gcm);
-                var encryptingCredentials_X509_Valid = new X509EncryptingCredentials(KeyingMaterial.DefaultCert_2048);
-                var encryptingCredentials_X509_AlgNotSupported = new X509EncryptingCredentials(KeyingMaterial.DefaultCert_2048, SecurityAlgorithms.RsaOAEP, SecurityAlgorithms.Aes128Gcm);
-                var encryptingCredentials_X509_EncNotSupported = new X509EncryptingCredentials(KeyingMaterial.DefaultCert_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes128CbcHmacSha256);
+                var encryptingCredentials_X509_Valid = new X509EncryptingCredentials(cert);
+                var encryptingCredentials_X509_AlgNotSupported = new X509EncryptingCredentials(cert, SecurityAlgorithms.RsaOAEP, SecurityAlgorithms.Aes128Gcm);
+                var encryptingCredentials_X509_EncNotSupported = new X509EncryptingCredentials(cert, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes128CbcHmacSha256);
                 var encryptingCredentials_PreSharedSessionKey_AlgNotNone = new EncryptingCredentials(sessionKey, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes128Gcm);
 
                 //SET HELPER CRYPTO PROVIDER FACTORY - remove when AES-GCM is released and supported
@@ -1760,6 +1745,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                 encryptingCredentials_X509_EncNotSupported.CryptoProviderFactory = new AesGcmProviderFactory();
                 encryptingCredentials_PreSharedSessionKey_AlgNotNone.CryptoProviderFactory = new AesGcmProviderFactory();
 
+                // token descriptors (Pre_Shared for one scenario and KeyWrap for another one)
                 var tokenDescriptor_PreSharedSessionKey_Valid = CreateTokenDescriptor(signingCredentials_Valid, encryptingCredentials_PreSharedSessionKey_Valid);
                 var tokenDescriptor_KeyWrap_Valid = CreateTokenDescriptor(signingCredentials_Valid, encryptingCredentials_X509_Valid);
                 var tokenDescriptor_KeyWrap_AlgotithmNotSupported = CreateTokenDescriptor(signingCredentials_Valid, encryptingCredentials_X509_AlgNotSupported);
@@ -1798,13 +1784,13 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     TestId = "EncryptedAssertion_KeyWrap_EncNotSupported",
                 });
 
+                // when pre-shared session key is being used, Algorithm should be set to None
                 theoryData.Add(new Saml2TheoryData
                 {
                     SecurityToken = tokenHandler.CreateToken(tokenDescriptor_PreSharedSessionKey_AlgotithmNotNone) as Saml2SecurityToken,
                     ExpectedException = new ExpectedException(typeof(Saml2SecurityTokenEncryptedAssertionEncryptionException), "IDX13626"),
                     TestId = "EncryptedAssertion_PreSharedSessionKey_AlgNotNone",
                 });
-
 
                 // Throws as unsupported AES-GCM is used - remove when AES-GCM is released and supported
                 var encryptingCredentials_PreSharedSessionKey_AESGCM = new EncryptingCredentials(sessionKey, SecurityAlgorithms.Aes128Gcm);
@@ -1835,12 +1821,12 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                 var token = theoryData.Handler.WriteToken(theoryData.SecurityToken);
                 var saml2Token = theoryData.Handler.ReadSaml2Token(token);
 
-                IdentityComparer.AreEqual(saml2Token.Assertion.Encrypted, true);
-                if (string.IsNullOrEmpty(saml2Token.Assertion.EncryptedAssertion))
+                IdentityComparer.AreEqual(saml2Token.Assertion.Encrypted, true); // token should be encrypted
+                if (string.IsNullOrEmpty(saml2Token.Assertion.EncryptedAssertion)) // if token is encrypted, EncryptedAssertion string should not be empty
                     context.Diffs.Add("!Assertion.EncryptedAssertion string should not be empty if Saml2Assertion.Encrypted == True");
 
-                theoryData.Handler.ValidateToken(token, theoryData.ValidationParameters, out SecurityToken validatedToken);
-                IdentityComparer.AreEqual(validatedToken, theoryData.SecurityToken, context);
+                theoryData.Handler.ValidateToken(token, theoryData.ValidationParameters, out SecurityToken validatedToken); // validate/decrypt token
+                IdentityComparer.AreEqual(validatedToken, theoryData.SecurityToken, context); // validated/decrypted token should be equal to the same token which was not encrypted
                 theoryData.ExpectedException.ProcessNoException(context);
             }
             catch (Exception ex)
@@ -1855,21 +1841,22 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
         {
             get
             {
+                // list keys
                 var signingKey = KeyingMaterial.X509SecurityKeySelfSigned2048_SHA256;
                 var sessionKey128 = KeyingMaterial.DefaultSymmetricSecurityKey_128;
                 var sessionKey192 = KeyingMaterial.DefaultSymmetricSecurityKey_192;
                 var sessionKey256 = KeyingMaterial.DefaultSymmetricSecurityKey_256;
+                var cert = KeyingMaterial.DefaultCert_2048;
 
                 var signingCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.RsaSha256Signature, SecurityAlgorithms.Sha256Digest);
 
-                // encrypting credentials
+                // encrypting credentials (Pre_Shared for one scenario and KeyWrap for another one)
                 var encryptingCredentials128_PreShared = new EncryptingCredentials(sessionKey128, SecurityAlgorithms.Aes128Gcm);
                 var encryptingCredentials192_PreShared = new EncryptingCredentials(sessionKey192, SecurityAlgorithms.Aes192Gcm);
                 var encryptingCredentials256_PreShared = new EncryptingCredentials(sessionKey256, SecurityAlgorithms.Aes256Gcm);
-
-                var encryptingCredentials_KeyWrap_128_RSAOAEP = new X509EncryptingCredentials(KeyingMaterial.DefaultCert_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes128Gcm);
-                var encryptingCredentials_KeyWrap_192_RSAOAEP = new X509EncryptingCredentials(KeyingMaterial.DefaultCert_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes192Gcm);
-                var encryptingCredentials_KeyWrap_256_RSAOAEP = new X509EncryptingCredentials(KeyingMaterial.DefaultCert_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes256Gcm);
+                var encryptingCredentials_KeyWrap_128_RSAOAEP = new X509EncryptingCredentials(cert, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes128Gcm);
+                var encryptingCredentials_KeyWrap_192_RSAOAEP = new X509EncryptingCredentials(cert, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes192Gcm);
+                var encryptingCredentials_KeyWrap_256_RSAOAEP = new X509EncryptingCredentials(cert, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes256Gcm);
 
                 //SET HELPER CRYPTO PROVIDER FACTORY - remove when AES-GCM is released and supported
                 encryptingCredentials128_PreShared.CryptoProviderFactory = new AesGcmProviderFactory();
@@ -1879,11 +1866,10 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                 encryptingCredentials_KeyWrap_192_RSAOAEP.CryptoProviderFactory = new AesGcmProviderFactory();
                 encryptingCredentials_KeyWrap_256_RSAOAEP.CryptoProviderFactory = new AesGcmProviderFactory();
 
-                // token descriptors
+                // token descriptors (Pre_Shared for one scenario and KeyWrap for another one)
                 var tokenDescriptor_128_PreShared = CreateTokenDescriptor(signingCredentials, encryptingCredentials128_PreShared);
                 var tokenDescriptor_192_PreShared = CreateTokenDescriptor(signingCredentials, encryptingCredentials192_PreShared);
                 var tokenDescriptor_256_PreShared = CreateTokenDescriptor(signingCredentials, encryptingCredentials256_PreShared);
-
                 var tokenDescriptor_KeyWrap_128_RSAOAEP = CreateTokenDescriptor(signingCredentials, encryptingCredentials_KeyWrap_128_RSAOAEP);
                 var tokenDescriptor_KeyWrap_192_RSAOAEP = CreateTokenDescriptor(signingCredentials, encryptingCredentials_KeyWrap_192_RSAOAEP);
                 var tokenDescriptor_KeyWrap_256_RSAOAEP = CreateTokenDescriptor(signingCredentials, encryptingCredentials_KeyWrap_256_RSAOAEP);
@@ -1902,6 +1888,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                 var tokenHandler = new Saml2SecurityTokenHandler();
                 var theoryData = new TheoryData<Saml2TheoryData>();
 
+                // test both scenarios and test all supported combinations (sessionKey-keywrapKey) in KeyWrap scenario
                 theoryData.Add(new Saml2TheoryData
                 {
                     First = true,
@@ -1926,7 +1913,6 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
                     ExpectedException = ExpectedException.NoExceptionExpected,
                     TestId = nameof(tokenDescriptor_256_PreShared),
                 });
-
 
                 theoryData.Add(new Saml2TheoryData
                 {
@@ -1956,6 +1942,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
             }
         }
 
+        // helper method to create a common SecurityTokenDescriptor
         private static SecurityTokenDescriptor CreateTokenDescriptor(SigningCredentials signingCredentials, EncryptingCredentials encryptingCredentials)
         {
             return new SecurityTokenDescriptor
@@ -1970,6 +1957,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
             };
         }
 
+        // helper method to create a common TokenValidationParameters
         private static TokenValidationParameters CreateTokenValidationParameters(SecurityKey signingKey, SecurityKey decryptionKey)
         {
             return new TokenValidationParameters

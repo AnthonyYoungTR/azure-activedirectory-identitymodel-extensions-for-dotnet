@@ -71,7 +71,7 @@ namespace Microsoft.IdentityModel.Tokens
                 throw LogHelper.LogArgumentNullException(nameof(algorithm));
 
             // Allow constructing AuthenticatedEncryptionProvider in case when AesGcm algorithm is passed to enable tests
-            // Until there is no AES-GCM support, Encrypt and Decrypt operations will throw
+            // Until there is no AES-GCM support, Encrypt and Decrypt operations will throw an exception
             if (IsAesGcmAlgorithm(algorithm))
             {
                 Key = key;
@@ -230,7 +230,7 @@ namespace Microsoft.IdentityModel.Tokens
             if (IsAesGcmAlgorithm(Algorithm))
             {
                 // still no support for AES-GCM
-                throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant(LogMessages.IDX10688, Algorithm), nameof(Algorithm)));
+                throw LogHelper.LogExceptionMessage(new SecurityTokenDecryptionFailedException(LogHelper.FormatInvariant(LogMessages.IDX10688, Algorithm)));
             }
 
             if (authenticatedData == null || authenticatedData.Length == 0)

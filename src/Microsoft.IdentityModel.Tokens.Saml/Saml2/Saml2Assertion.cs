@@ -43,13 +43,13 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
     public class Saml2Assertion
     {
         private string _canonicalString;
+        private EncryptingCredentials _encryptingCredentials;
         private Saml2Id _id;
         private DateTime _issueInstant;
         private Saml2NameIdentifier _issuer;
         private Signature _signature;
         private Saml2Advice _advice;
         private Saml2Conditions _conditions;
-        private EncryptingCredentials _encryptingCredentials;
         private string _inclusiveNamespacesPrefixList;
         private SigningCredentials _signingCredentials;
         private Saml2Subject _subject;
