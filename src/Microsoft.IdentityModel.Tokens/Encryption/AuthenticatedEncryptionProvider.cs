@@ -70,11 +70,8 @@ namespace Microsoft.IdentityModel.Tokens
             if (string.IsNullOrWhiteSpace(algorithm))
                 throw LogHelper.LogArgumentNullException(nameof(algorithm));
 
-            if (!IsSupportedAlgorithm(key, algorithm))
-                throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant(LogMessages.IDX10668, GetType(), algorithm, key)));
-
-            ValidateKeySize(key, algorithm);
-
+            // Allow constructing AuthenticatedEncryptionProvider in case when AesGcm algorithm is passed to enable tests
+            // Until there is no AES-GCM support, Encrypt and Decrypt operations will throw
             if (IsAesGcmAlgorithm(algorithm))
             {
                 Key = key;
@@ -82,6 +79,10 @@ namespace Microsoft.IdentityModel.Tokens
             }
             else
             {
+                if (!IsSupportedAlgorithm(key, algorithm))
+                    throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant(LogMessages.IDX10668, GetType(), algorithm, key)));
+
+                ValidateKeySize(key, algorithm);
 
                 _authenticatedkeys = GetAlgorithmParameters(key, algorithm);
                 _hmacAlgorithm = GetHmacAlgorithm(algorithm);
@@ -144,6 +145,9 @@ namespace Microsoft.IdentityModel.Tokens
             if (plaintext == null || plaintext.Length == 0)
                 throw LogHelper.LogArgumentNullException(nameof(plaintext));
 
+            if (authenticatedData == null || authenticatedData.Length == 0)
+                throw LogHelper.LogArgumentNullException(nameof(authenticatedData));
+
             if (_disposed)
                 throw LogHelper.LogExceptionMessage(new ObjectDisposedException(GetType().ToString()));
 
@@ -158,25 +162,20 @@ namespace Microsoft.IdentityModel.Tokens
                     //random nonce
                     RandomNumberGenerator rng = RandomNumberGenerator.Create();
                     rng.GetBytes(nonce);
-                    
                     try
-                    {
+-                   {
                         aesGcm.Encrypt(nonce, plaintext, ciphertext, tag);
                     }
                     catch (Exception ex)
-                    {
+-                   {
                         throw LogHelper.LogExceptionMessage(new SecurityTokenEncryptionFailedException(LogHelper.FormatInvariant(LogMessages.IDX10618, Algorithm), ex));
                     }
                 }
-
+                
                 return new AuthenticatedEncryptionResult(Key, ciphertext, nonce, tag);
             }
             else
-            {
-
-                if (authenticatedData == null || authenticatedData.Length == 0)
-                    throw LogHelper.LogArgumentNullException(nameof(authenticatedData));
-
+            { 
                 Aes aes = Aes.Create();
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.PKCS7;
@@ -230,33 +229,8 @@ namespace Microsoft.IdentityModel.Tokens
 
             if (IsAesGcmAlgorithm(Algorithm))
             {
-                int cipherSize = ciphertext.Length - AES_GCM_IV_SIZE - AES_GCM_TAG_SIZE;
-
-                if (cipherSize < 1)
-                    throw LogHelper.LogExceptionMessage(new SecurityTokenDecryptionFailedException(LogHelper.FormatInvariant(LogMessages.IDX10620)));
-
-                byte[] cipher = new byte[cipherSize];
-                byte[] nonce = new byte[AES_GCM_IV_SIZE];
-                byte[] tag = new byte[AES_GCM_TAG_SIZE];
-
-                Array.Copy(ciphertext, 0, nonce, 0, AES_GCM_IV_SIZE);
-                Array.Copy(ciphertext, AES_GCM_IV_SIZE, cipher, 0, cipherSize);
-                Array.Copy(ciphertext, ciphertext.Length - AES_GCM_TAG_SIZE, tag, 0, AES_GCM_TAG_SIZE);
-
-                byte[] plaintext = new byte[cipher.Length];
-
-                using (var aesGcm = new AesGcm(GetKeyBytes(Key)))
-                {
-                    try
-                    {
-                        aesGcm.Decrypt(nonce, cipher, tag, plaintext);
-                        return plaintext;
-                    }
-                    catch (Exception ex)
-                    {
-                        throw LogHelper.LogExceptionMessage(new SecurityTokenDecryptionFailedException(LogHelper.FormatInvariant(LogMessages.IDX10619, Algorithm), ex));
-                    }
-                }
+                // still no support for AES-GCM
+                throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant(LogMessages.IDX10688, Algorithm), nameof(Algorithm)));
             }
 
             if (authenticatedData == null || authenticatedData.Length == 0)
@@ -373,13 +347,13 @@ namespace Microsoft.IdentityModel.Tokens
         private static string GetHmacAlgorithm(string algorithm)
         {
             if (SecurityAlgorithms.Aes128CbcHmacSha256.Equals(algorithm, StringComparison.Ordinal))
-                    return SecurityAlgorithms.HmacSha256;
+                return SecurityAlgorithms.HmacSha256;
 
             if (SecurityAlgorithms.Aes192CbcHmacSha384.Equals(algorithm, StringComparison.Ordinal))
                 return SecurityAlgorithms.HmacSha384;
 
             if (SecurityAlgorithms.Aes256CbcHmacSha512.Equals(algorithm, StringComparison.Ordinal))
-                    return SecurityAlgorithms.HmacSha512;
+                return SecurityAlgorithms.HmacSha512;
 
             throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant(LogMessages.IDX10652, algorithm), nameof(algorithm)));
         }
@@ -465,57 +439,7 @@ namespace Microsoft.IdentityModel.Tokens
                 return;
             }
 
-            if (SecurityAlgorithms.Aes128Gcm.Equals(algorithm, StringComparison.Ordinal))
-            {
-                if (key.KeySize < 128)
-                    throw LogHelper.LogExceptionMessage(new ArgumentOutOfRangeException("key.KeySize", LogHelper.FormatInvariant(LogMessages.IDX10653, SecurityAlgorithms.Aes128Gcm, 128, key.KeyId, key.KeySize)));
-
-                return;
-            }
-
-            if (SecurityAlgorithms.Aes192Gcm.Equals(algorithm, StringComparison.Ordinal))
-            {
-                if (key.KeySize < 192)
-                    throw LogHelper.LogExceptionMessage(new ArgumentOutOfRangeException("key.KeySize", LogHelper.FormatInvariant(LogMessages.IDX10653, SecurityAlgorithms.Aes192Gcm, 192, key.KeyId, key.KeySize)));
-
-                return;
-            }
-
-            if (SecurityAlgorithms.Aes256Gcm.Equals(algorithm, StringComparison.Ordinal))
-            {
-                if (key.KeySize < 256)
-                    throw LogHelper.LogExceptionMessage(new ArgumentOutOfRangeException("key.KeySize", LogHelper.FormatInvariant(LogMessages.IDX10653, SecurityAlgorithms.Aes256Gcm, 256, key.KeyId, key.KeySize)));
-
-                return;
-            }
-
             throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant(LogMessages.IDX10652, algorithm)));
-        }
-    }
-
-    //dummy implementation until AesGcm is released
-    class AesGcm : IDisposable
-    {
-        public AesGcm(byte[] key)
-        {
-        }
-
-        public void Dispose()
-        {
-           // throw new NotImplementedException();
-        }
-
-        public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[] associatedData = null)
-        {
-            Array.Copy(plaintext, ciphertext, plaintext.Length);
-            RandomNumberGenerator rng = RandomNumberGenerator.Create();
-            rng.GetBytes(tag);
-
-        }
-
-        public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[] associatedData = null)
-        {
-            Array.Copy(ciphertext, plaintext, ciphertext.Length);
         }
     }
 }
