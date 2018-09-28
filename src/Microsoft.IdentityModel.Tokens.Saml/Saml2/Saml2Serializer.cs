@@ -1751,6 +1751,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
             plaintextWriter = null;
 
             var plaintextAssertionBytes = plaintextStream.ToArray();
+            ((IDisposable)plaintextStream).Dispose();
 
             originalWriter.WriteStartElement(Prefix, Saml2Constants.Elements.EncryptedAssertion, Saml2Constants.Namespace);
 
