@@ -1712,6 +1712,14 @@ namespace Microsoft.IdentityModel.JsonWebTokens.Tests
                     },
                     new CreateTokenTheoryData()
                     {
+                        TestId = "WrongRsaOaepKeyWrapIdentifier-Aes128CbcHmacSha256",
+                        ValidationParameters = Default.TokenValidationParameters(KeyingMaterial.RsaSecurityKey_2048, Default.SymmetricSigningKey256),
+                        Payload = Default.PayloadString,
+                        SigningCredentials = Default.SymmetricSigningCredentials,
+                        EncryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepKeyWrap, SecurityAlgorithms.Aes128CbcHmacSha256)
+                    },
+                    new CreateTokenTheoryData()
+                    {
                         TestId = "RsaOaepKeyWrap-Aes192CbcHmacSha384",
                         ValidationParameters = Default.TokenValidationParameters(KeyingMaterial.RsaSecurityKey_2048, Default.SymmetricSigningKey256),
                         Payload = Default.PayloadString,
@@ -1720,11 +1728,27 @@ namespace Microsoft.IdentityModel.JsonWebTokens.Tests
                     },
                     new CreateTokenTheoryData()
                     {
+                        TestId = "WrongRsaOaepKeyWrapIdentifier-Aes192CbcHmacSha384",
+                        ValidationParameters = Default.TokenValidationParameters(KeyingMaterial.RsaSecurityKey_2048, Default.SymmetricSigningKey256),
+                        Payload = Default.PayloadString,
+                        SigningCredentials = Default.SymmetricSigningCredentials,
+                        EncryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepKeyWrap, SecurityAlgorithms.Aes192CbcHmacSha384)
+                    },
+                    new CreateTokenTheoryData()
+                    {
                         TestId = "RsaOaepKeyWrap-Aes256CbcHmacSha512",
                         ValidationParameters = Default.TokenValidationParameters(KeyingMaterial.RsaSecurityKey_2048, Default.SymmetricSigningKey256),
                         Payload = Default.PayloadString,
                         SigningCredentials = Default.SymmetricSigningCredentials,
                         EncryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes256CbcHmacSha512)
+                    },
+                    new CreateTokenTheoryData()
+                    {
+                        TestId = "WrongRsaOaepKeyWrapIdentifier-Aes256CbcHmacSha512",
+                        ValidationParameters = Default.TokenValidationParameters(KeyingMaterial.RsaSecurityKey_2048, Default.SymmetricSigningKey256),
+                        Payload = Default.PayloadString,
+                        SigningCredentials = Default.SymmetricSigningCredentials,
+                        EncryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepKeyWrap, SecurityAlgorithms.Aes256CbcHmacSha512)
                     },
                     new CreateTokenTheoryData()
                     {
@@ -1749,6 +1773,14 @@ namespace Microsoft.IdentityModel.JsonWebTokens.Tests
                         Payload = Default.PayloadString,
                         SigningCredentials = Default.SymmetricSigningCredentials,
                         EncryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepMgf1pKeyWrap, SecurityAlgorithms.Aes192CbcHmacSha384)
+                    },
+                     new CreateTokenTheoryData()
+                    {
+                        TestId = "WrongRsaOaepKeyWrapIdentifier-Aes192CbcHmacSha384",
+                        ValidationParameters = Default.TokenValidationParameters(KeyingMaterial.RsaSecurityKey_2048, Default.SymmetricSigningKey256),
+                        Payload = Default.PayloadString,
+                        SigningCredentials = Default.SymmetricSigningCredentials,
+                        EncryptingCredentials = new EncryptingCredentials(KeyingMaterial.RsaSecurityKey_2048, SecurityAlgorithms.RsaOaepKeyWrap, SecurityAlgorithms.Aes192CbcHmacSha384)
                     }
                 };
             }
