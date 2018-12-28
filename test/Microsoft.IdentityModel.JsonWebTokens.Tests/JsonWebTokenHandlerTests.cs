@@ -268,7 +268,9 @@ namespace Microsoft.IdentityModel.JsonWebTokens.Tests
                         {
                             SigningCredentials = KeyingMaterial.JsonWebKeyRsa256SigningCredentials,
                             EncryptingCredentials = KeyingMaterial.DefaultSymmetricEncryptingCreds_Aes256_Sha512_512,
+                            #pragma warning disable 0618
                             Subject = new ClaimsIdentity(Default.PayloadClaims),
+                            #pragma warning restore 0618
                         },
                         JsonWebTokenHandler = new JsonWebTokenHandler(),
                         JwtSecurityTokenHandler = tokenHandler,
@@ -692,7 +694,9 @@ namespace Microsoft.IdentityModel.JsonWebTokens.Tests
                         TokenDescriptor =  new SecurityTokenDescriptor
                         {
                             SigningCredentials = KeyingMaterial.JsonWebKeyRsa256SigningCredentials,
+                            #pragma warning disable 0618
                             Subject = new ClaimsIdentity(Default.PayloadClaims)
+                            #pragma warning restore 0618
                         },
                         JsonWebTokenHandler = new JsonWebTokenHandler(),
                         JwtSecurityTokenHandler = tokenHandler,

@@ -227,7 +227,7 @@ namespace Microsoft.IdentityModel.Tokens
             if (IsAesGcmAlgorithm(Algorithm))
             {
                 // Until there is no AES-GCM support, Encrypt and Decrypt operations will throw an exception
-                throw LogHelper.LogExceptionMessage(new SecurityTokenDecryptionFailedException(LogHelper.FormatInvariant(LogMessages.IDX10688, Algorithm)));
+                throw LogHelper.LogExceptionMessage(new SecurityTokenDecryptionFailedException(LogHelper.FormatInvariant(LogMessages.IDX10692, Algorithm)));
             }
 
             if (authenticatedData == null || authenticatedData.Length == 0)

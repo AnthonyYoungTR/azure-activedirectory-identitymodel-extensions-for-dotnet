@@ -232,6 +232,113 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
             }
         }
 
+        [Theory, MemberData(nameof(RoundTripTokenTheoryData))]
+        public void RoundTripToken(SamlTheoryData theoryData)
+        {
+            var context = TestUtilities.WriteHeader($"{this}.RoundTripToken", theoryData);
+            try
+            {
+                var samlToken = theoryData.Handler.CreateToken(theoryData.TokenDescriptor);
+                var token = theoryData.Handler.WriteToken(samlToken);
+                var principal = theoryData.Handler.ValidateToken(token, theoryData.ValidationParameters, out SecurityToken validatedToken);
+                theoryData.ExpectedException.ProcessNoException(context);
+            }
+            catch (Exception ex)
+            {
+                theoryData.ExpectedException.ProcessException(ex, context);
+            }
+
+            TestUtilities.AssertFailIfErrors(context);
+        }
+
+        public static TheoryData<SamlTheoryData> RoundTripTokenTheoryData
+        {
+            get => new TheoryData<SamlTheoryData>
+            {
+                new SamlTheoryData
+                {
+                    First = true,
+                    TestId = nameof(Default.ClaimsIdentity),
+                    TokenDescriptor = new SecurityTokenDescriptor
+                    {
+                        Expires = DateTime.UtcNow + TimeSpan.FromDays(1),
+                        Audience = Default.Audience,
+                        SigningCredentials = Default.AsymmetricSigningCredentials,
+                        Issuer = Default.Issuer,
+                        #pragma warning disable 0618
+                        Subject = Default.SamlClaimsIdentity
+                        #pragma warning restore 0618
+                    },
+                    ValidationParameters = new TokenValidationParameters
+                    {
+                        IssuerSigningKey = Default.AsymmetricSigningKey,
+                        ValidAudience = Default.Audience,
+                        ValidIssuer = Default.Issuer,
+                    }
+                },
+                new SamlTheoryData
+                {
+                    TestId = nameof(Default.ClaimsIdentity) + nameof(KeyingMaterial.RsaSigningCreds_2048),
+                    TokenDescriptor = new SecurityTokenDescriptor
+                    {
+                        Expires = DateTime.UtcNow + TimeSpan.FromDays(1),
+                        Audience = Default.Audience,
+                        SigningCredentials = KeyingMaterial.RsaSigningCreds_2048,
+                        Issuer = Default.Issuer,
+                        #pragma warning disable 0618
+                        Subject = Default.SamlClaimsIdentity
+                        #pragma warning restore 0618
+                    },
+                    ValidationParameters = new TokenValidationParameters
+                    {
+                        IssuerSigningKey = KeyingMaterial.RsaSigningCreds_2048_Public.Key,
+                        ValidAudience = Default.Audience,
+                        ValidIssuer = Default.Issuer,
+                    },
+                },
+                new SamlTheoryData
+                {
+                    TestId = nameof(Default.ClaimsIdentity) + nameof(KeyingMaterial.RsaSigningCreds_2048_FromRsa),
+                    TokenDescriptor = new SecurityTokenDescriptor
+                    {
+                        Expires = DateTime.UtcNow + TimeSpan.FromDays(1),
+                        Audience = Default.Audience,
+                        SigningCredentials = KeyingMaterial.RsaSigningCreds_2048_FromRsa,
+                        Issuer = Default.Issuer,
+                        #pragma warning disable 0618
+                        Subject = Default.SamlClaimsIdentity
+                        #pragma warning restore 0618
+                    },
+                    ValidationParameters = new TokenValidationParameters
+                    {
+                        IssuerSigningKey = KeyingMaterial.RsaSigningCreds_2048_FromRsa_Public.Key,
+                        ValidAudience = Default.Audience,
+                        ValidIssuer = Default.Issuer,
+                    },
+                },
+                new SamlTheoryData
+                {
+                    TestId = nameof(Default.ClaimsIdentity) + nameof(KeyingMaterial.JsonWebKeyRsa256SigningCredentials),
+                    TokenDescriptor = new SecurityTokenDescriptor
+                    {
+                        Expires = DateTime.UtcNow + TimeSpan.FromDays(1),
+                        Audience = Default.Audience,
+                        SigningCredentials = KeyingMaterial.JsonWebKeyRsa256SigningCredentials,
+                        Issuer = Default.Issuer,
+                        #pragma warning disable 0618
+                        Subject = Default.SamlClaimsIdentity
+                        #pragma warning restore 0618
+                    },
+                    ValidationParameters = new TokenValidationParameters
+                    {
+                        IssuerSigningKey = KeyingMaterial.JsonWebKeyRsa256PublicSigningCredentials.Key,
+                        ValidAudience = Default.Audience,
+                        ValidIssuer = Default.Issuer,
+                    }
+                }
+            };
+        }
+
         // Test checks to make sure that default times are correctly added to the token
         // upon token creation.
         [Fact]
@@ -803,7 +910,9 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
                     Expires = Default.Expires,
                     Issuer = Default.Issuer,
                     SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.RsaSha256Signature, SecurityAlgorithms.Sha256Digest),
+#pragma warning disable 0618
                     Subject = new ClaimsIdentity(Default.SamlClaims)
+#pragma warning restore 0618
                 };
 
                 var validationParameters = new TokenValidationParameters
