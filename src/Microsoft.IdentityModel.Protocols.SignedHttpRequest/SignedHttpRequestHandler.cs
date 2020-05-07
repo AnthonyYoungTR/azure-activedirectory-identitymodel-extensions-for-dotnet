@@ -542,31 +542,53 @@ namespace Microsoft.IdentityModel.Protocols.SignedHttpRequest
             if (!(signedHttpRequest is JsonWebToken jwtSignedHttpRequest))
                 throw LogHelper.LogExceptionMessage(new SignedHttpRequestValidationException(LogHelper.FormatInvariant(LogMessages.IDX23030, signedHttpRequest.GetType(), typeof(JsonWebToken), signedHttpRequest)));
 
-            if (signedHttpRequestValidationContext.SignedHttpRequestValidationParameters.ReplayValidatorAsync != null)
+            var validationParameters = signedHttpRequestValidationContext.SignedHttpRequestValidationParameters;
+
+            if (validationParameters.ReplayValidatorAsync != null)
                 await signedHttpRequestValidationContext.SignedHttpRequestValidationParameters.ReplayValidatorAsync(jwtSignedHttpRequest, signedHttpRequestValidationContext, cancellationToken).ConfigureAwait(false);
 
-            if (signedHttpRequestValidationContext.SignedHttpRequestValidationParameters.ValidateTs)
+            if (ShouldValidate(jwtSignedHttpRequest,validationParameters.ValidateTs, ValidateIfPresent(validationParameters, SignedHttpRequestClaimTypes.Ts), SignedHttpRequestClaimTypes.Ts))
                 ValidateTsClaim(jwtSignedHttpRequest, signedHttpRequestValidationContext);
 
-            if (signedHttpRequestValidationContext.SignedHttpRequestValidationParameters.ValidateM)
+            if (ShouldValidate(jwtSignedHttpRequest, validationParameters.ValidateM, ValidateIfPresent(validationParameters, SignedHttpRequestClaimTypes.M), SignedHttpRequestClaimTypes.M))
                 ValidateMClaim(jwtSignedHttpRequest, signedHttpRequestValidationContext);
 
-            if (signedHttpRequestValidationContext.SignedHttpRequestValidationParameters.ValidateU)
+            if (ShouldValidate(jwtSignedHttpRequest, validationParameters.ValidateU, ValidateIfPresent(validationParameters, SignedHttpRequestClaimTypes.U), SignedHttpRequestClaimTypes.U))
                 ValidateUClaim(jwtSignedHttpRequest, signedHttpRequestValidationContext);
 
-            if (signedHttpRequestValidationContext.SignedHttpRequestValidationParameters.ValidateP)
+            if (ShouldValidate(jwtSignedHttpRequest, validationParameters.ValidateP, ValidateIfPresent(validationParameters, SignedHttpRequestClaimTypes.P), SignedHttpRequestClaimTypes.P))
                 ValidatePClaim(jwtSignedHttpRequest, signedHttpRequestValidationContext);
 
-            if (signedHttpRequestValidationContext.SignedHttpRequestValidationParameters.ValidateQ)
+            if (ShouldValidate(jwtSignedHttpRequest, validationParameters.ValidateQ, ValidateIfPresent(validationParameters, SignedHttpRequestClaimTypes.Q), SignedHttpRequestClaimTypes.Q))
                 ValidateQClaim(jwtSignedHttpRequest, signedHttpRequestValidationContext);
 
-            if (signedHttpRequestValidationContext.SignedHttpRequestValidationParameters.ValidateH)
+            if (ShouldValidate(jwtSignedHttpRequest, validationParameters.ValidateH, ValidateIfPresent(validationParameters, SignedHttpRequestClaimTypes.H), SignedHttpRequestClaimTypes.H))
                 ValidateHClaim(jwtSignedHttpRequest, signedHttpRequestValidationContext);
 
-            if (signedHttpRequestValidationContext.SignedHttpRequestValidationParameters.ValidateB)
+            if (ShouldValidate(jwtSignedHttpRequest, validationParameters.ValidateB, ValidateIfPresent(validationParameters, SignedHttpRequestClaimTypes.B), SignedHttpRequestClaimTypes.B))
                 ValidateBClaim(jwtSignedHttpRequest, signedHttpRequestValidationContext);
 
             return jwtSignedHttpRequest;
+        }
+
+        /// <summary>
+        /// Determine if validation of a claim should happen.
+        /// </summary>
+        /// <param name="jwtSignedHttpRequest">The request being considered to validate the claim on.</param>
+        /// <param name="validateClaim">Force validation to always occur.</param>
+        /// <param name="validateIfPresent">Validate if the claim is present.</param>
+        /// <param name="claimName">The name of the claim to validate.</param>
+        /// <returns>Whether the given claim should be validated.</returns>
+        internal virtual bool ShouldValidate(JsonWebToken jwtSignedHttpRequest, bool validateClaim, bool validateIfPresent, string claimName)
+        {
+            return validateClaim || (validateIfPresent && jwtSignedHttpRequest.TryGetClaim(claimName, out var claimValue) && claimValue != null);
+        }
+
+        private bool ValidateIfPresent(SignedHttpRequestValidationParameters validationParameters, string claim)
+        {
+            return validationParameters.ValidatePresentClaims &&
+                validationParameters.ClaimsValidatedWhenPresent != null &&
+                validationParameters.ClaimsValidatedWhenPresent.Contains(claim) == true;
         }
 
         /// <summary>
@@ -623,8 +645,9 @@ namespace Microsoft.IdentityModel.Protocols.SignedHttpRequest
         /// <param name="signedHttpRequest">A SignedHttpRequest.</param>
         /// <param name="signedHttpRequestValidationContext">A structure that wraps parameters needed for SignedHttpRequest validation.</param>
         /// <remarks>
-        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateTs"/> is set to <c>true</c>.
-        /// </remarks>    
+        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateTs"/> is set to <c>true</c> or a ts claim is present and
+        /// <see cref="SignedHttpRequestValidationParameters.ValidatePresentClaims"/> is set to true.
+        /// </remarks>
         internal virtual void ValidateTsClaim(JsonWebToken signedHttpRequest, SignedHttpRequestValidationContext signedHttpRequestValidationContext)
         {
             if (!signedHttpRequest.TryGetPayloadValue(SignedHttpRequestClaimTypes.Ts, out long tsClaimValue))
@@ -644,8 +667,9 @@ namespace Microsoft.IdentityModel.Protocols.SignedHttpRequest
         /// <param name="signedHttpRequest">A SignedHttpRequest.</param>
         /// <param name="signedHttpRequestValidationContext">A structure that wraps parameters needed for SignedHttpRequest validation.</param>
         /// <remarks>
-        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateM"/> is set to <c>true</c>.
-        /// </remarks>     
+        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateM"/> is set to <c>true</c> or a m claim is present and
+        /// <see cref="SignedHttpRequestValidationParameters.ValidatePresentClaims"/> is set to true.
+        /// </remarks>
         internal virtual void ValidateMClaim(JsonWebToken signedHttpRequest, SignedHttpRequestValidationContext signedHttpRequestValidationContext)
         {
             var expectedHttpMethod = signedHttpRequestValidationContext.HttpRequestData.Method;
@@ -670,8 +694,9 @@ namespace Microsoft.IdentityModel.Protocols.SignedHttpRequest
         /// <param name="signedHttpRequest">A SignedHttpRequest.</param>
         /// <param name="signedHttpRequestValidationContext">A structure that wraps parameters needed for SignedHttpRequest validation.</param>
         /// <remarks>
-        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateU"/> is set to <c>true</c>.
-        /// </remarks>     
+        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateU"/> is set to <c>true</c> or a u claim is present and
+        /// <see cref="SignedHttpRequestValidationParameters.ValidatePresentClaims"/> is set to true.
+        /// </remarks>
         internal virtual void ValidateUClaim(JsonWebToken signedHttpRequest, SignedHttpRequestValidationContext signedHttpRequestValidationContext)
         {
             var httpRequestUri = signedHttpRequestValidationContext.HttpRequestData.Uri;
@@ -702,8 +727,9 @@ namespace Microsoft.IdentityModel.Protocols.SignedHttpRequest
         /// <param name="signedHttpRequest">A SignedHttpRequest.</param>
         /// <param name="signedHttpRequestValidationContext">A structure that wraps parameters needed for SignedHttpRequest validation.</param>
         /// <remarks>
-        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateP"/> is set to <c>true</c>.
-        /// </remarks>     
+        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateP"/> is set to <c>true</c> or a p claim is present and
+        /// <see cref="SignedHttpRequestValidationParameters.ValidatePresentClaims"/> is set to true.
+        /// </remarks>
         internal virtual void ValidatePClaim(JsonWebToken signedHttpRequest, SignedHttpRequestValidationContext signedHttpRequestValidationContext)
         {
             var httpRequestUri = signedHttpRequestValidationContext.HttpRequestData.Uri;
@@ -729,8 +755,9 @@ namespace Microsoft.IdentityModel.Protocols.SignedHttpRequest
         /// <param name="signedHttpRequest">A SignedHttpRequest.</param>
         /// <param name="signedHttpRequestValidationContext">A structure that wraps parameters needed for SignedHttpRequest validation.</param>
         /// <remarks>
-        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateQ"/> is set to <c>true</c>.
-        /// </remarks>     
+        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateQ"/> is set to <c>true</c> or a q claim is present and
+        /// <see cref="SignedHttpRequestValidationParameters.ValidatePresentClaims"/> is set to true.
+        /// </remarks>
         internal virtual void ValidateQClaim(JsonWebToken signedHttpRequest, SignedHttpRequestValidationContext signedHttpRequestValidationContext)
         {
             var httpRequestUri = signedHttpRequestValidationContext.HttpRequestData.Uri;
@@ -801,8 +828,9 @@ namespace Microsoft.IdentityModel.Protocols.SignedHttpRequest
         /// <param name="signedHttpRequest">A SignedHttpRequest.</param>
         /// <param name="signedHttpRequestValidationContext">A structure that wraps parameters needed for SignedHttpRequest validation.</param>
         /// <remarks>
-        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateH"/> is set to <c>true</c>.
-        /// </remarks>     
+        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateH"/> is set to <c>true</c> or a h claim is present and
+        /// <see cref="SignedHttpRequestValidationParameters.ValidatePresentClaims"/> is set to true.
+        /// </remarks>
         internal virtual void ValidateHClaim(JsonWebToken signedHttpRequest, SignedHttpRequestValidationContext signedHttpRequestValidationContext)
         {
             if (!signedHttpRequest.TryGetPayloadValue(SignedHttpRequestClaimTypes.H, out JArray hClaim) || hClaim == null)
@@ -867,8 +895,9 @@ namespace Microsoft.IdentityModel.Protocols.SignedHttpRequest
         /// <param name="signedHttpRequest">A SignedHttpRequest.</param>
         /// <param name="signedHttpRequestValidationContext">A structure that wraps parameters needed for SignedHttpRequest validation.</param>
         /// <remarks>
-        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateB"/> is set to <c>true</c>.
-        /// </remarks>     
+        /// This method will be executed only if <see cref="SignedHttpRequestValidationParameters.ValidateB"/> is set to <c>true</c> or a b claim is present and
+        /// <see cref="SignedHttpRequestValidationParameters.ValidatePresentClaims"/> is set to true.
+        /// </remarks>
         internal virtual void ValidateBClaim(JsonWebToken signedHttpRequest, SignedHttpRequestValidationContext signedHttpRequestValidationContext)
         {
             var httpRequestBody = signedHttpRequestValidationContext.HttpRequestData.Body;

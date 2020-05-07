@@ -216,5 +216,28 @@ namespace Microsoft.IdentityModel.Protocols.SignedHttpRequest
         /// </summary>
         /// <remarks>https://tools.ietf.org/html/draft-ietf-oauth-signed-http-request-03#section-3</remarks>  
         public bool ValidateB { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether claims in <see cref="ClaimsValidatedWhenPresent"/> should be validated if present.
+        /// </summary>
+        /// <remarks>
+        /// Allows for validation of a claim if present, even if the validation option for the claim is set to <c>false</c>.
+        /// </remarks>
+        public bool ValidatePresentClaims { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the claims to validate if present.
+        /// </summary>
+        /// <remarks>
+        /// Validation will only occur if <see cref="ValidatePresentClaims"/> is set to <c>true</c>.
+        /// </remarks>
+        public IEnumerable<string> ClaimsValidatedWhenPresent { get; set; } = new List<string>
+        {
+            SignedHttpRequestClaimTypes.Ts,
+            SignedHttpRequestClaimTypes.M,
+            SignedHttpRequestClaimTypes.U,
+            SignedHttpRequestClaimTypes.P
+        };
+
     }
 }
