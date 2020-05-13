@@ -73,6 +73,7 @@ namespace Microsoft.IdentityModel.Xml
         internal const string IDX30211 = "IDX30211: The TransfromFactory does not support the canonicalizing transform: '{0}'.";
         internal const string IDX30212 = "IDX30212: Unable to verify Signature as Signature.SignedInfo is null.";
         internal const string IDX30213 = "IDX30213: The CryptoProviderFactory: '{0}', CreateForSigning returned null for key: '{1}', SignatureMethod: '{2}'.";
+        internal const string IDX30214 = "IDX30214: User supplied validation of the algorithm '{0}' failed.";
 
         // logging messages
         internal const string IDX30300 = "IDX30300: KeyInfo skipped unknown element: '{0}'.";

@@ -63,7 +63,7 @@ namespace Microsoft.IdentityModel.Xml.Tests
         }
 
         [Fact]
-        public void Publics( )
+        public void Publics()
         {
             var signature = new Signature();
             var properties = new List<string>()
@@ -72,7 +72,7 @@ namespace Microsoft.IdentityModel.Xml.Tests
                 "SignedInfo",
             };
 
-            var context = new GetSetContext( );
+            var context = new GetSetContext();
             foreach (string property in properties)
             {
                 TestUtilities.SetGet(signature, property, null, ExpectedException.ArgumentNullException(substringExpected: "value"), context);
@@ -122,7 +122,7 @@ namespace Microsoft.IdentityModel.Xml.Tests
         }
 
         [Theory, MemberData(nameof(VerifyTheoryData))]
-        public void Verify( SignatureTheoryData theoryData )
+        public void Verify(SignatureTheoryData theoryData)
         {
             var context = TestUtilities.WriteHeader($"{this}.Verify", theoryData);
             try
@@ -200,6 +200,139 @@ namespace Microsoft.IdentityModel.Xml.Tests
             }
         }
 
+        [Theory, MemberData(nameof(VerifyTheoryDataWithAlgorithmValidation))]
+        public void VerifyWithAlgorithmValidation(SignatureTheoryData theoryData)
+        {
+            var context = TestUtilities.WriteHeader($"{this}.Verify", theoryData);
+            try
+            {
+                theoryData.Signature.Verify(theoryData.SecurityKey, theoryData.CryptoProviderFactory, theoryData.SecurityToken, theoryData.TokenValidationParameters);
+            }
+            catch (Exception ex)
+            {
+                theoryData.ExpectedException.ProcessException(ex, context);
+            }
+
+            TestUtilities.AssertFailIfErrors(context);
+        }
+
+        public static TheoryData<SignatureTheoryData> VerifyTheoryDataWithAlgorithmValidation
+        {
+            get
+            {
+                var signatureUnknownReferenceDigestAlg = Default.Signature;
+                signatureUnknownReferenceDigestAlg.SignedInfo.References[0].DigestMethod = $"_{SecurityAlgorithms.Sha256Digest}";
+
+                return new TheoryData<SignatureTheoryData>
+                {
+                    new SignatureTheoryData
+                    {
+                        ExpectedException = new ExpectedException(typeof(XmlValidationException), "IDX30212:"),
+                        First = true,
+                        SecurityKey = Default.AsymmetricSigningKey,
+                        SecurityToken = new DerivedSecurityToken(),
+                        TokenValidationParameters = new TokenValidationParameters(),
+                        Signature = new Signature(),
+                        TestId = "SignedInfo:Null"
+                    },
+                    new SignatureTheoryData
+                    {
+                        ExpectedException = ExpectedException.ArgumentNullException("key"),
+                        SecurityKey = null,
+                        Signature = new Signature(),
+                        TestId = "SecurityKey:Null"
+                    },
+                    new SignatureTheoryData
+                    {
+                        CryptoProviderFactory = null,
+                        ExpectedException = ExpectedException.ArgumentNullException("cryptoProviderFactory"),
+                        SecurityKey = Default.AsymmetricSigningKey,
+                        Signature = new Signature(),
+                        TestId = "CryptoProviderFactory:Null"
+                    },
+                    new SignatureTheoryData
+                    {
+                        CryptoProviderFactory = new CustomCryptoProviderFactory(new string[] { SecurityAlgorithms.RsaSha256Signature }),
+                        SecurityToken = null,
+                        ExpectedException = ExpectedException.ArgumentNullException("securityToken"),
+                        SecurityKey = Default.AsymmetricSigningKey,
+                        Signature = new Signature(),
+                        TestId = "SecurityToken:Null"
+                    },
+                    new SignatureTheoryData
+                    {
+                        CryptoProviderFactory =  new CustomCryptoProviderFactory(new string[] { SecurityAlgorithms.RsaSha256Signature }),
+                        SecurityToken = new DerivedSecurityToken(),
+                        TokenValidationParameters = null,
+                        ExpectedException = ExpectedException.ArgumentNullException("validationParameters"),
+                        SecurityKey = Default.AsymmetricSigningKey,
+                        Signature = new Signature(),
+                        TestId = "TokenValidationParameters:Null"
+                    },
+                    new SignatureTheoryData
+                    {
+                        ExpectedException = new ExpectedException(typeof(XmlValidationException), "IDX30207:"),
+                        SecurityToken = new DerivedSecurityToken(),
+                        TokenValidationParameters = new TokenValidationParameters(),
+                        SecurityKey = Default.AsymmetricSigningKey,
+                        Signature = new Signature(new SignedInfo{SignatureMethod = SecurityAlgorithms.Aes128CbcHmacSha256 }),
+                        TestId = "Signature:MethodNotSupported"
+                    },
+                    new SignatureTheoryData
+                    {
+                        CryptoProviderFactory =  new CustomCryptoProviderFactory(new string[] { SecurityAlgorithms.RsaSha256Signature }),
+                        SecurityToken = new DerivedSecurityToken(),
+                        TokenValidationParameters = new TokenValidationParameters(),
+                        ExpectedException = new ExpectedException(typeof(XmlValidationException), "IDX30203:"),
+                        SecurityKey = Default.AsymmetricSigningKey,
+                        Signature = new Signature(new SignedInfo{SignatureMethod = SecurityAlgorithms.RsaSha256Signature }),
+                        TestId = "SignatureProvider.CreateForVerifying:ReturnsNull"
+                    },
+                    new SignatureTheoryData
+                    {
+                        CryptoProviderFactory = new CustomCryptoProviderFactory(new string[] { SecurityAlgorithms.RsaSha256Signature })
+                        {
+                            SigningSignatureProvider = new CustomSignatureProvider(Default.AsymmetricSigningKey, SecurityAlgorithms.RsaSha256Signature),
+                            VerifyingSignatureProvider = new CustomSignatureProvider(Default.AsymmetricSigningKey, SecurityAlgorithms.RsaSha256Signature)
+                        },
+                        SecurityToken = new DerivedSecurityToken(),
+                        TokenValidationParameters = new TokenValidationParameters(),
+                        ExpectedException = new ExpectedException(typeof(XmlValidationException), "IDX30208:"),
+                        SecurityKey = Default.AsymmetricSigningKey,
+                        Signature = signatureUnknownReferenceDigestAlg,
+                        TestId = "Reference:UnknownDigestAlg",
+                    },
+                    new SignatureTheoryData
+                    {
+                        CryptoProviderFactory =  new CustomCryptoProviderFactory(new string[] { SecurityAlgorithms.RsaSha256Signature }),
+                        SecurityToken = new DerivedSecurityToken(),
+                        TokenValidationParameters = new TokenValidationParameters
+                        {
+                            AlgorithmValidator = ValidationDelegates.AlgorithmValidatorBuilder(false)
+                        },
+                        ExpectedException = new ExpectedException(typeof(XmlValidationException), "IDX30214:", ignoreInnerException:true),
+                        SecurityKey = Default.AsymmetricSigningKey,
+                        Signature = new Signature(new SignedInfo{SignatureMethod = SecurityAlgorithms.RsaSha256Signature }),
+                        TestId = "AlgorithmValidator:ReturnsFalse"
+                    },
+
+                    new SignatureTheoryData
+                    {
+                        CryptoProviderFactory =  new CustomCryptoProviderFactory(new string[] { SecurityAlgorithms.RsaSha256Signature }),
+                        SecurityToken = new DerivedSecurityToken(),
+                        TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidAlgorithms = new List<string> { "NotAValidAlgorithm" }
+                        },
+                        ExpectedException = new ExpectedException(typeof(XmlValidationException), "IDX30214:", ignoreInnerException:true),
+                        SecurityKey = Default.AsymmetricSigningKey,
+                        Signature = new Signature(new SignedInfo{SignatureMethod = SecurityAlgorithms.RsaSha256Signature }),
+                        TestId = "ValidAlgorithms:AlgorithmNotInList"
+                    },
+                };
+            }
+        }
+
         private static SignatureTheoryData SignatureTest(SignatureTestSet testSet, SecurityKey key, XmlTokenStream tokenStream, ExpectedException expectedException = null, bool first = false)
         {
             return new SignatureTheoryData
@@ -228,6 +361,12 @@ namespace Microsoft.IdentityModel.Xml.Tests
             set;
         } = Default.AsymmetricSigningKey;
 
+        public SecurityToken SecurityToken
+        {
+            get;
+            set;
+        }
+
         public DSigSerializer Serializer
         {
             get;
@@ -251,6 +390,12 @@ namespace Microsoft.IdentityModel.Xml.Tests
             get;
             set;
         } = Default.TokenStream;
+
+        public TokenValidationParameters TokenValidationParameters
+        {
+            get;
+            set;
+        }
 
         public string Xml
         {

@@ -1056,7 +1056,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml
                 {
                     try
                     {
-                        samlToken.Assertion.Signature.Verify(key, validationParameters.CryptoProviderFactory ?? key.CryptoProviderFactory);
+                        samlToken.Assertion.Signature.Verify(key, validationParameters.CryptoProviderFactory ?? key.CryptoProviderFactory, samlToken, validationParameters);
                         LogHelper.LogInformation(TokenLogMessages.IDX10242, token);
                         samlToken.SigningKey = key;
                         return samlToken;

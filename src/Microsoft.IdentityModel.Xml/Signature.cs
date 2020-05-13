@@ -107,6 +107,25 @@ namespace Microsoft.IdentityModel.Xml
         /// Verifies the signature over the SignedInfo.
         /// </summary>
         /// <param name="key">the <see cref="SecurityKey"/> to use for cryptographic operations.</param>
+        /// <param name="securityToken">The <see cref="SecurityToken"/> being validated.</param>
+        /// <param name="validationParameters"><see cref="TokenValidationParameters"/> required for validation.</param>
+        /// <exception cref="ArgumentNullException"> if <paramref name="key"/> is null.</exception>
+        /// <exception cref="XmlValidationException"> if <see cref="SignedInfo"/> null.</exception>
+        /// <exception cref="XmlValidationException"> if <see cref="SignedInfo.SignatureMethod"/> is not supported.</exception>
+        /// <exception cref="XmlValidationException"> if signature does not validate.</exception>
+        /// <exception cref="XmlValidationException"> if algorithm does not validate.</exception>
+        public void Verify(SecurityKey key, SecurityToken securityToken, TokenValidationParameters validationParameters)
+        {
+            if (key == null)
+                throw LogArgumentNullException(nameof(key));
+
+            Verify(key, key.CryptoProviderFactory, securityToken, validationParameters);
+        }
+
+        /// <summary>
+        /// Verifies the signature over the SignedInfo.
+        /// </summary>
+        /// <param name="key">the <see cref="SecurityKey"/> to use for cryptographic operations.</param>
         /// <param name="cryptoProviderFactory">the <see cref="CryptoProviderFactory"/> to obtain cryptographic operators.</param>
         /// <exception cref="ArgumentNullException"> if <paramref name="key"/> is null.</exception>
         /// <exception cref="ArgumentNullException"> if <paramref name="cryptoProviderFactory"/> is null.</exception>
@@ -127,6 +146,61 @@ namespace Microsoft.IdentityModel.Xml
             if (!cryptoProviderFactory.IsSupportedAlgorithm(SignedInfo.SignatureMethod, key))
                 throw LogValidationException(LogMessages.IDX30207, SignedInfo.SignatureMethod, cryptoProviderFactory.GetType());
 
+            ValidateSignedInfo(key, cryptoProviderFactory);
+        }
+
+        /// <summary>
+        /// Verifies the signature over the SignedInfo.
+        /// </summary>
+        /// <param name="key">the <see cref="SecurityKey"/> to use for cryptographic operations.</param>
+        /// <param name="cryptoProviderFactory">the <see cref="CryptoProviderFactory"/> to obtain cryptographic operators.</param>
+        /// <param name="securityToken">The <see cref="SecurityToken"/> being validated.</param>
+        /// <param name="validationParameters"><see cref="TokenValidationParameters"/> required for validation.</param>
+        /// <exception cref="ArgumentNullException"> if <paramref name="key"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"> if <paramref name="cryptoProviderFactory"/> is null.</exception>
+        /// <exception cref="XmlValidationException"> if <see cref="SignedInfo"/> null.</exception>
+        /// <exception cref="XmlValidationException"> if <see cref="SignedInfo.SignatureMethod"/> is not supported.</exception>
+        /// <exception cref="XmlValidationException"> if signature does not validate.</exception>
+        /// <exception cref="XmlValidationException"> if algorithm does not validate.</exception>
+        public void Verify(SecurityKey key, CryptoProviderFactory cryptoProviderFactory, SecurityToken securityToken, TokenValidationParameters validationParameters)
+        {
+            if (key == null)
+                throw LogArgumentNullException(nameof(key));
+
+            if (cryptoProviderFactory == null)
+                throw LogArgumentNullException(nameof(cryptoProviderFactory));
+
+            if (securityToken == null)
+                throw LogArgumentNullException(nameof(securityToken));
+
+            if (validationParameters == null)
+                throw LogArgumentNullException(nameof(validationParameters));
+
+            if (SignedInfo == null)
+                throw LogValidationException(LogMessages.IDX30212);
+
+            if (!cryptoProviderFactory.IsSupportedAlgorithm(SignedInfo.SignatureMethod, key))
+                throw LogValidationException(LogMessages.IDX30207, SignedInfo.SignatureMethod, cryptoProviderFactory.GetType());
+
+            ValidateAlgorithm(key, securityToken, validationParameters);
+
+            ValidateSignedInfo(key, cryptoProviderFactory);
+        }
+
+        private void ValidateAlgorithm(SecurityKey key, SecurityToken securityToken, TokenValidationParameters validationParameters)
+        {
+            try
+            {
+                Validators.ValidateAlgorithm(SignedInfo.SignatureMethod, key, securityToken, validationParameters);
+            }
+            catch (SecurityTokenInvalidAlgorithmException ex)
+            {
+                throw LogValidationException(LogMessages.IDX30214, ex, ex.InvalidAlgorithm);
+            }
+        }
+
+        private void ValidateSignedInfo(SecurityKey key, CryptoProviderFactory cryptoProviderFactory)
+        {
             var signatureProvider = cryptoProviderFactory.CreateForVerifying(key, SignedInfo.SignatureMethod);
             if (signatureProvider == null)
                 throw LogValidationException(LogMessages.IDX30203, cryptoProviderFactory, key, SignedInfo.SignatureMethod);
