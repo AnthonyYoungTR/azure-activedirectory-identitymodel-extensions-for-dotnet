@@ -1184,8 +1184,8 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
             }
         }
 
+#if NET_CORE_3_0
         #region EncryptedAssertion
-
         [Theory, MemberData(nameof(AccessEncryptedAssertionTheoryData))]
         public void AccessEncryptedAssertion(Saml2TheoryData theoryData)
         {
@@ -2065,6 +2065,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2.Tests
         }
 
         #endregion
+#endif
     }
 
     public class Saml2SecurityTokenHandlerPublic : Saml2SecurityTokenHandler

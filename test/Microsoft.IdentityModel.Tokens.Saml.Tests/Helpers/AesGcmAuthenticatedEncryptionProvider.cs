@@ -25,14 +25,14 @@
 //
 //------------------------------------------------------------------------------
 
+#if NET_CORE_3_0
+
 using Microsoft.IdentityModel.Logging;
 using System;
 using System.Security.Cryptography;
 
 namespace Microsoft.IdentityModel.Tokens.Saml.Tests
 {
-
-#if FALSE
     // Helper AuthenticatedEncryptionProvider class made to mimic AES-GCM
     // remove when AES-GCM is released and supported
     public class AesGcmAuthenticatedEncryptionProvider : AuthenticatedEncryptionProvider
@@ -110,7 +110,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
                     }
                     catch (Exception ex)
                     {
-                        throw LogHelper.LogExceptionMessage(new SecurityTokenDecryptionFailedException(LogHelper.FormatInvariant(Tokens.LogMessages.IDX10619, Algorithm), ex));
+                        throw LogHelper.LogExceptionMessage(new SecurityTokenDecryptionFailedException(LogHelper.FormatInvariant("Tokens.LogMessages.IDX10619", Algorithm), ex));
                     }
                 }
             }
@@ -158,5 +158,6 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
             Array.Copy(ciphertext, plaintext, ciphertext.Length);
         }
     }
-#endif
 }
+
+#endif

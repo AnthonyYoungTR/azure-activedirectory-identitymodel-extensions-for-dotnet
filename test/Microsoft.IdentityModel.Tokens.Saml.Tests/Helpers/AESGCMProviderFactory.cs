@@ -25,6 +25,7 @@
 //
 //------------------------------------------------------------------------------
 
+#if NET_CORE_3_0
 namespace Microsoft.IdentityModel.Tokens.Saml.Tests
 {
     // Helper CryptoProviderFactory which returns AesGcmAuthenticatedEncryptionProvider when creating AuthenticatedEncryptionProvider
@@ -42,3 +43,4 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
         }
     }
 }
+#endif
