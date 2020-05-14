@@ -31,6 +31,8 @@ using System.Security.Cryptography;
 
 namespace Microsoft.IdentityModel.Tokens.Saml.Tests
 {
+
+#if FALSE
     // Helper AuthenticatedEncryptionProvider class made to mimic AES-GCM
     // remove when AES-GCM is released and supported
     public class AesGcmAuthenticatedEncryptionProvider : AuthenticatedEncryptionProvider
@@ -69,7 +71,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
                     }
                     catch (Exception ex)
                     {
-                        throw LogHelper.LogExceptionMessage(new SecurityTokenEncryptionFailedException(LogHelper.FormatInvariant(Tokens.LogMessages.IDX10618, Algorithm), ex));
+                        throw LogHelper.LogExceptionMessage(new SecurityTokenEncryptionFailedException(LogHelper.FormatInvariant("Tokens.LogMessages.IDX10618", Algorithm), ex));
                     }
                 }
 
@@ -87,7 +89,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
                 int cipherSize = ciphertext.Length - AES_GCM_IV_SIZE - AES_GCM_TAG_SIZE;
 
                 if (cipherSize < 1)
-                    throw LogHelper.LogExceptionMessage(new SecurityTokenDecryptionFailedException(LogHelper.FormatInvariant(Tokens.LogMessages.IDX10620)));
+                    throw LogHelper.LogExceptionMessage(new SecurityTokenDecryptionFailedException(LogHelper.FormatInvariant("Tokens.LogMessages.IDX10620")));
 
                 byte[] cipher = new byte[cipherSize];
                 byte[] nonce = new byte[AES_GCM_IV_SIZE];
@@ -156,4 +158,5 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
             Array.Copy(ciphertext, plaintext, ciphertext.Length);
         }
     }
+#endif
 }

@@ -48,6 +48,14 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
         /// <summary>
         /// Instantiates a new instance of <see cref="Saml2Serializer"/>.
         /// </summary>
+        public Saml2Serializer()
+        {
+            _encryptedAssertionHandler = null;
+        }
+
+        /// <summary>
+        /// Instantiates a new instance of <see cref="Saml2Serializer"/>.
+        /// </summary>
         /// <param name="encryptedAssertionHandler"></param>
         public Saml2Serializer(IEncryptedAssertionHandler encryptedAssertionHandler)
         {

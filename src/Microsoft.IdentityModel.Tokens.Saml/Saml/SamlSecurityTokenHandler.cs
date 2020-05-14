@@ -157,10 +157,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml
 #if NET45
                     settings.XmlResolver = null;
 #endif
-                    using (var reader = XmlDictionaryReader.CreateDictionaryReader(XmlReader.Create(sr, settings))) 
-                    {
-                        return CanReadToken(reader);
-                    }
+                    return CanReadToken(reader);
                 }
             }
             catch (Exception)

@@ -158,6 +158,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
             }
         }
 
+        /// <summary>
         /// Gets or sets the credentials used for encrypting the assertion.
         /// </summary>
         /// <exception cref="Saml2SecurityTokenEncryptedAssertionException"> If this assertion is encrypted.</exception>

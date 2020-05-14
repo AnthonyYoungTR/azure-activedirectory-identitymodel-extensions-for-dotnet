@@ -37,9 +37,10 @@ namespace Microsoft.IdentityModel.Tokens
     /// </summary>
     public class AuthenticatedEncryptionProvider : IDisposable
     {
+#if NETSTANDARD2_1
         private const int AES_GCM_IV_SIZE = 12;
         private const int AES_GCM_TAG_SIZE = 16;
-
+#endif
         private struct AuthenticatedKeys
         {
             public SymmetricSecurityKey AesKey;
@@ -148,23 +149,26 @@ namespace Microsoft.IdentityModel.Tokens
             if (_disposed)
                 throw LogHelper.LogExceptionMessage(new ObjectDisposedException(GetType().ToString()));
 
+            byte[] ciphertext;
+
+#if NETSTANDARD2_1
             if (IsAesGcmAlgorithm(Algorithm))
             {
-                byte[] ciphertext = new byte[plaintext.Length];
+                ciphertext = new byte[plaintext.Length];
                 byte[] nonce = new byte[AES_GCM_IV_SIZE];
                 byte[] tag = new byte[AES_GCM_TAG_SIZE];
-
                 using (var aesGcm = new AesGcm(GetKeyBytes(Key)))
                 {
                     //random nonce
                     RandomNumberGenerator rng = RandomNumberGenerator.Create();
                     rng.GetBytes(nonce);
+
                     try
--                   {
+                    {
                         aesGcm.Encrypt(nonce, plaintext, ciphertext, tag);
                     }
-                    catch (Exception ex)
--                   {
+                    catch(Exception ex)
+                    {
                         throw LogHelper.LogExceptionMessage(new SecurityTokenEncryptionFailedException(LogHelper.FormatInvariant(LogMessages.IDX10618, Algorithm), ex));
                     }
                 }
@@ -172,7 +176,8 @@ namespace Microsoft.IdentityModel.Tokens
                 return new AuthenticatedEncryptionResult(Key, ciphertext, nonce, tag);
             }
             else
-            { 
+            {
+#endif
                 Aes aes = Aes.Create();
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.PKCS7;
@@ -180,7 +185,6 @@ namespace Microsoft.IdentityModel.Tokens
                 if (iv != null)
                     aes.IV = iv;
 
-                byte[] ciphertext;
                 try
                 {
                     ciphertext = Transform(aes.CreateEncryptor(), plaintext, 0, plaintext.Length);
@@ -201,8 +205,10 @@ namespace Microsoft.IdentityModel.Tokens
                 Array.Copy(macHash, authenticationTag, authenticationTag.Length);
 
                 return new AuthenticatedEncryptionResult(Key, ciphertext, aes.IV, authenticationTag);
+#if NETSTANDARD2_1
+                }
+#endif
             }
-        }
 
         /// <summary>
         /// Decrypts ciphertext into plaintext
