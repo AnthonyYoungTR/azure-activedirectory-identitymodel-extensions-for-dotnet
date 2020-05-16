@@ -705,10 +705,12 @@ namespace System.IdentityModel.Tokens.Jwt
                 throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant(TokenLogMessages.IDX10209, token.Length, MaximumTokenSizeInBytes)));
 
             var tokenParts = token.Split(new char[] { '.' }, JwtConstants.MaxJwtSegmentCount + 1);
-            ClaimsPrincipal claimsPrincipal = null;
-            SecurityToken signatureValidatedToken = null;
+
             if (tokenParts.Length != JwtConstants.JwsSegmentCount && tokenParts.Length != JwtConstants.JweSegmentCount)
                 throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant(LogMessages.IDX12741, token)));
+
+            ClaimsPrincipal claimsPrincipal = null;
+            SecurityToken signatureValidatedToken = null;
 
             if (tokenParts.Length == JwtConstants.JweSegmentCount)
             {
@@ -718,16 +720,15 @@ namespace System.IdentityModel.Tokens.Jwt
                 jwtToken.InnerToken = innerToken;
                 signatureValidatedToken = jwtToken;
                 claimsPrincipal = ValidateTokenPayload(innerToken, validationParameters);
-                validatedToken = signatureValidatedToken;
-                return claimsPrincipal;
             }
             else
             {
                 signatureValidatedToken = ValidateSignature(token, validationParameters);
                 claimsPrincipal = ValidateTokenPayload(signatureValidatedToken as JwtSecurityToken, validationParameters);
-                validatedToken = signatureValidatedToken;
-                return claimsPrincipal;
             }
+
+            validatedToken = signatureValidatedToken;
+            return claimsPrincipal;
         }
 
         /// <summary>
