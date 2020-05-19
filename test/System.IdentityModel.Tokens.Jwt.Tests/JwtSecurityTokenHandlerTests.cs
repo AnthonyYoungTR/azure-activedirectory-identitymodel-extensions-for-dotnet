@@ -40,6 +40,75 @@ namespace System.IdentityModel.Tokens.Jwt.Tests
 {
     public class JwtSecurityTokenHandlerTests
     {
+        [Theory, MemberData(nameof(VerifyValidatedTokenTheoryData))]
+        public void VerifyValidatedToken(JwtTheoryData theoryData)
+        {
+            var context = new CompareContext();
+            SecurityToken validatedToken = null;
+            try
+            {
+                var claimsIdentity = theoryData.TokenHandler.ValidateToken(theoryData.Token, theoryData.ValidationParameters, out validatedToken).Identity as ClaimsIdentity;
+                Assert.True(validatedToken != null);
+                theoryData.ExpectedException.ProcessNoException(context);
+            }
+            catch (Exception ex)
+            {
+                Assert.True(validatedToken == null);
+                theoryData.ExpectedException.ProcessException(ex, context.Diffs);
+            }
+
+            TestUtilities.AssertFailIfErrors(context);
+        }
+
+        public static TheoryData<JwtTheoryData> VerifyValidatedTokenTheoryData
+        {
+            get
+            {
+                var theoryData = new TheoryData<JwtTheoryData>();
+                var handler = new JwtSecurityTokenHandler();
+
+                // Throws exception during payload validation since issuer is an empty string.
+                ClaimsIdentity claimsIdentity = new ClaimsIdentity(ClaimSets.DefaultClaimsIdentity);
+                var validationParameters = Default.AsymmetricSignTokenValidationParameters;
+                validationParameters.ValidateIssuer = true;
+
+                theoryData.Add(
+                    new JwtTheoryData
+                    {
+                        TestId = "CheckValidatedTokenValueInCaseOfPayloadValidationException",
+                        ExpectedException = ExpectedException.SecurityTokenInvalidIssuerException(LogMessages.IDX10211),
+                        Token = handler.CreateEncodedJwt("", Default.Audience, claimsIdentity, null, null, null, Default.AsymmetricSigningCredentials),
+                        TokenHandler = handler,
+                        ValidationParameters = validationParameters
+                    }
+                );
+
+                theoryData.Add(
+                    new JwtTheoryData
+                    {
+                        TestId = "CheckValidatedTokenValueInCaseOfNoException",
+                        ExpectedException = ExpectedException.NoExceptionExpected,
+                        Token = handler.CreateEncodedJwt(Default.Issuer, Default.Audience, claimsIdentity, null, null, null, Default.AsymmetricSigningCredentials),
+                        TokenHandler = handler,
+                        ValidationParameters = validationParameters
+                    }
+                );
+
+                theoryData.Add(
+                    new JwtTheoryData
+                    {
+                        TestId = "CheckValidatedTokenValueInCaseOfSignatureValidationException",
+                        ExpectedException = ExpectedException.SecurityTokenSignatureKeyNotFoundException("IDX10501"),
+                        Token = handler.CreateEncodedJwt(Default.Issuer, Default.Audience, claimsIdentity, null, null, null, Default.SymmetricSigningCredentials),
+                        TokenHandler = handler,
+                        ValidationParameters = validationParameters
+                    }
+                );
+
+                return theoryData;
+            }
+        }
+
         [Theory, MemberData(nameof(ActorTheoryData))]
         public void Actor(JwtTheoryData theoryData)
         {
