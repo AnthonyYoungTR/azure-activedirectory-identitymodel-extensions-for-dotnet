@@ -67,11 +67,11 @@ namespace System.IdentityModel.Tokens.Jwt.Tests
                 var theoryData = new TheoryData<JwtTheoryData>();
                 var handler = new JwtSecurityTokenHandler();
 
-                // Throws exception during payload validation since issuer is an empty string.
                 ClaimsIdentity claimsIdentity = new ClaimsIdentity(ClaimSets.DefaultClaimsIdentity);
                 var validationParameters = Default.AsymmetricSignTokenValidationParameters;
                 validationParameters.ValidateIssuer = true;
 
+                // Throws exception during payload validation since issuer is an empty string.
                 theoryData.Add(
                     new JwtTheoryData
                     {
